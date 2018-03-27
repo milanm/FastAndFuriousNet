@@ -4,8 +4,9 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using fnf.Client.Messages;
 
-namespace fnf.Client
+namespace fnf.Client.Client
 {
     public class RabbitClient : IRabbitClient
     {
@@ -18,18 +19,18 @@ namespace fnf.Client
         private readonly string teamName;
         private readonly string hostName;
 
-        private object publishLock = new object();
+        private readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         private Dictionary<Type, EventingBasicConsumer> queueConsumers = new Dictionary<Type, EventingBasicConsumer>();
 
         private Dictionary<Type, string> channelMap = new Dictionary<Type, string>
         {
-            [typeof(VelocityMessage)] = RoutingKeyNames.VELOCITY,
-            [typeof(SensorMessage)] = RoutingKeyNames.SENSOR,
-            [typeof(PenaltyMessage)] = RoutingKeyNames.PENALTY,
-            [typeof(RoundTimeMessage)] = RoutingKeyNames.ROUND_PASSED,
-            [typeof(StartMessage)] = RoutingKeyNames.START,
-            [typeof(StopMessage)] = RoutingKeyNames.STOP
+            [typeof(VelocityMessage)] = RoutingKeyNames.Velocity,
+            [typeof(SensorMessage)] = RoutingKeyNames.Sensor,
+            [typeof(PenaltyMessage)] = RoutingKeyNames.Penalty,
+            [typeof(RoundTimeMessage)] = RoutingKeyNames.RoundPassed,
+            [typeof(StartMessage)] = RoutingKeyNames.Start,
+            [typeof(StopMessage)] = RoutingKeyNames.Stop
         };
 
         public RabbitClient(string teamName, string hostName)
@@ -40,51 +41,73 @@ namespace fnf.Client
 
         public void Connect()
         {
-            ConnectionFactory connectionFactory = new ConnectionFactory { HostName = hostName };
-            connection = connectionFactory.CreateConnection();
+            log.Info("Establishing the connection with rabbitMQ server");
+            try
+            {
+                ConnectionFactory connectionFactory = new ConnectionFactory {HostName = hostName};
+                connection = connectionFactory.CreateConnection();
+            }
+            catch (Exception e)
+            {
+                log.Error("Failed to connect to rabbitMQ server");
+                log.Error("Error details : " + e.Message);
+                return; 
+            }
+            log.Info("Connection established");
         }
 
         public void Subscribe<T>(Action<T> onMessageReceived)
         {
-            var routingKey = channelMap[typeof(T)];
-            var channel = channelRegistry.GetOrCreateChannel(teamName, routingKey, connection);
-            var queueName = queueRegistry.GetOrCreateBindingQueue(teamName, routingKey, channel);
-
-            var consumerExists = queueConsumers.ContainsKey(typeof(T));
-
-            EventingBasicConsumer consumer;
-            if (!consumerExists)
+            if (connection != null && connection.IsOpen)
             {
-                consumer = new EventingBasicConsumer(channel);
-                queueConsumers[typeof(T)] = consumer;
+                var routingKey = channelMap[typeof(T)];
+                var channel = channelRegistry.GetOrCreateChannel(teamName, routingKey, connection);
+                var queueName = queueRegistry.GetOrCreateBindingQueue(teamName, routingKey, channel);
+
+                var consumerExists = queueConsumers.ContainsKey(typeof(T));
+
+                EventingBasicConsumer consumer;
+                if (!consumerExists)
+                {
+                    consumer = new EventingBasicConsumer(channel);
+                    queueConsumers[typeof(T)] = consumer;
+                }
+                else
+                {
+                    consumer = queueConsumers[typeof(T)];
+                }
+
+                consumer.Received += (model, ea) =>
+                {
+                    var body = Encoding.UTF8.GetString(ea.Body);
+                    T msg = serializer.Deserialize<T>(body);
+
+                    onMessageReceived(msg);
+                    log.Info(serializer.Serialize(msg));
+                };
+
+                channel.BasicConsume(queue: queueName,
+                    autoAck: true,
+                    consumer: consumer);
             }
             else
             {
-                consumer = queueConsumers[typeof(T)];
+                log.Error("Can not subscribe to channel because connection is not created or is closed.");
             }
-
-            consumer.Received += (model, ea) =>
-            {
-                var body = Encoding.UTF8.GetString(ea.Body);
-                T msg = serializer.Deserialize<T>(body);
-
-                onMessageReceived(msg);
-            };
-
-            channel.BasicConsume(queue: queueName,
-                                 autoAck: true,
-                                 consumer: consumer);
         }
 
         public void Disconnect()
         {
             if (connection.IsOpen)
+            {
                 connection.Abort();
+                log.Info("Connection aborted.");
+            }
         }
 
         public void Publish(string exchangeName, string routingKey, string message)
         {
-            if (connection.IsOpen)
+            if (connection != null && connection.IsOpen)
             {
                 var channel = channelRegistry.GetOrCreateChannel(exchangeName, routingKey, connection);
 
@@ -97,11 +120,15 @@ namespace fnf.Client
                                      basicProperties: null,
                                      body: body);
             }
+            else
+            {
+                log.Info("Can not publish because connection is not created or is closed");
+            }
         }
 
         public void Publish(string queueName, string message)
         {
-            if (connection.IsOpen)
+            if (connection != null && connection.IsOpen)
             {
                 var channel = channelRegistry.GetOrCreateChannel(queueName, connection);
 
@@ -116,6 +143,10 @@ namespace fnf.Client
                                      routingKey: queueName,
                                      basicProperties: null,
                                      body: body);
+            }
+            else
+            {
+                log.Info("Can not publish because connection is not created or is closed");
             }
         }
     }

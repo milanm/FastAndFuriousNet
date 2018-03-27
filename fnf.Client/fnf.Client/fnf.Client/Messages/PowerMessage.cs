@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace fnf.Client
+﻿namespace fnf.Client.Messages
 {
     public class PowerMessage
     {

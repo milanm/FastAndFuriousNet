@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace fnf.Client
+﻿namespace fnf.Client.Messages
 {
-    public class StartMessage
+    public class StartMessage 
     {
         public long TimeStamp { get; set; }
         public string TrackId { get; set; }

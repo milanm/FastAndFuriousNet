@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using RabbitMQ.Client; 
 
-namespace fnf.Client
+namespace fnf.Client.Client
 {
     class ChannelRegistry
     {
-        private Dictionary<string, IModel> channels = new Dictionary<string, IModel>(); 
+        private Dictionary<string, IModel> channels = new Dictionary<string, IModel>();
 
         public IModel GetOrCreateChannel(string exchangeName, string routingKey, IConnection connection)
         {
-            IModel result = null; 
+            IModel result;
             if (channels.ContainsKey(exchangeName + "-" + routingKey))
             {
                result = channels[exchangeName + "-" + routingKey];
@@ -26,7 +24,7 @@ namespace fnf.Client
 
         public IModel GetOrCreateChannel(string queueName, IConnection connection)
         {
-            IModel result = null;
+            IModel result;
             if (channels.ContainsKey(queueName))
             {
                 result = channels[queueName];

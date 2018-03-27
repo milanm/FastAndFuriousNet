@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using RabbitMQ.Client; 
 
-namespace fnf.Client
+namespace fnf.Client.Client
 {
     class QueueRegistry
     {

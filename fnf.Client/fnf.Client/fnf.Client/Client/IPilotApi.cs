@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using fnf.Client.Messages;
 
 namespace fnf.Client.Client
 {

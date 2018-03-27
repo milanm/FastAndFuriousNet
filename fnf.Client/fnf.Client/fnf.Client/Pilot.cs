@@ -1,8 +1,6 @@
 ﻿using fnf.Client.Client;
-using fnf.Client.Serialization;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using fnf.Client.Messages;
 
 namespace fnf.Client
 {
@@ -10,33 +8,19 @@ namespace fnf.Client
     {
         private IPilotApi pilotApi;
 
-        private ISerializer serializer = new Serializer();
-
-        private Action<VelocityMessage> velocityHandler;
-
-        private Action<SensorMessage> sensorHandler;
-
-        private Action<PenaltyMessage> penaltyHandler;
-
-        private Action<RoundTimeMessage> roundEndHandler;
-
-        private Action<StartMessage> startHandler;
-
-        private Action<StopMessage> stopHandler;
-
         private string accessCode; 
 
-        public const int SAFE_POWER = 120;
+        public const int SafePower = 120;
 
-        public const double SAFE_GYRO = 1000;
+        public const double SafeGyro = 1000;
 
-        public const double DANGEROUS_GYRO = 4000;
+        public const double DangerousGyro = 4000;
 
-        private int currentPower = SAFE_POWER;
+        private int currentPower = SafePower;
 
-        private double lastGyroZ = 0; 
+        private double lastGyroZ;
 
-        private double currentGyroZ = 0;
+        private double currentGyroZ;
 
         public void OnVelocityMessage(VelocityMessage velocityMessage)
         {
@@ -49,7 +33,7 @@ namespace fnf.Client
 
             currentGyroZ = sensorMessage.G[2];
 
-            if ((currentGyroZ > lastGyroZ) && ((DANGEROUS_GYRO - currentGyroZ) > (currentGyroZ - SAFE_GYRO)))
+            if ((currentGyroZ > lastGyroZ) && ((DangerousGyro - currentGyroZ) > (currentGyroZ - SafeGyro)))
             {
                 currentPower -= 5;
             }
@@ -68,7 +52,7 @@ namespace fnf.Client
                 TimeStamp = Convert.ToInt64((DateTime.Now - epoch).TotalMilliseconds)
             });
 
-            Console.WriteLine("Gyro Z is " + currentGyroZ);
+            
         }
 
         public void OnPenaltyMessage(PenaltyMessage penaltyMessage)
@@ -77,7 +61,7 @@ namespace fnf.Client
 
             lastGyroZ = currentGyroZ;
 
-            currentPower = SAFE_POWER; 
+            currentPower = SafePower; 
 
             SetPower(new PowerMessage()
             {
@@ -101,13 +85,11 @@ namespace fnf.Client
                 TeamId = accessCode,
                 TimeStamp = Convert.ToInt64((DateTime.Now - epoch).TotalMilliseconds)
             });
-
-            Console.WriteLine(serializer.Serialize<RoundTimeMessage>(roundTimeMessage));
         }
 
         public void OnStartMessage(StartMessage startMessage)
         {
-            Console.WriteLine("Start message received");
+            
         }
 
         public void OnStopMessage(StopMessage stopMessage)
@@ -133,12 +115,12 @@ namespace fnf.Client
 
         public void SubscribeToAllChannels()
         {
-            pilotApi.SubscribeOnVelocity(velocityHandler = OnVelocityMessage);
-            pilotApi.SubscribeOnSensor(sensorHandler = OnSensorMessage);
-            pilotApi.SubscribeOnPenalty(penaltyHandler = OnPenaltyMessage);
-            pilotApi.SubscribeOnRoundPassed(roundEndHandler = OnRoundEndMessage);
-            pilotApi.SubscribeOnRaceStart(startHandler = OnStartMessage);
-            pilotApi.SubscribeOnRaceEnd(stopHandler = OnStopMessage); 
+            pilotApi.SubscribeOnVelocity((message) => { OnVelocityMessage(message);});
+            pilotApi.SubscribeOnSensor((message) => { OnSensorMessage(message);});
+            pilotApi.SubscribeOnPenalty((message) => { OnPenaltyMessage(message);});
+            pilotApi.SubscribeOnRoundPassed((message) => { OnRoundEndMessage(message);});
+            pilotApi.SubscribeOnRaceStart((message) => { OnStartMessage(message);});
+            pilotApi.SubscribeOnRaceEnd((message) => { OnStopMessage(message);}); 
         }
 
 

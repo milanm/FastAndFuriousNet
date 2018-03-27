@@ -40,7 +40,7 @@ namespace Tests
 
             pilotApi.SetPower(message);
 
-            rabbitClientMock.Verify(mock => mock.Publish(message.TeamId, RoutingKeyNames.POWER, serializer.Serialize(message)));
+            rabbitClientMock.Verify(mock => mock.Publish(message.TeamId, RoutingKeyNames.Power, serializer.Serialize(message)));
         }
 
         [Test]

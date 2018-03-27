@@ -1,10 +1,6 @@
 ﻿using fnf.Client.Serialization;
-using Newtonsoft.Json;
+using fnf.Client.Messages;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 
 namespace fnf.Client.Client
 {
@@ -13,8 +9,6 @@ namespace fnf.Client.Client
         private IRabbitClient client;
 
         private ISerializer serializer = new Serializer();
-
-        private Thread publishingThread;
 
         private object powerLock = new object(); 
 
@@ -25,34 +19,34 @@ namespace fnf.Client.Client
 
         public void AnnounceIsAlive(KeepAliveMessage keepAliveMessage)
         {
-            var message = serializer.Serialize<KeepAliveMessage>(keepAliveMessage);
-            client.Publish(RoutingKeyNames.ANNOUNCE,message);
+            var message = serializer.Serialize(keepAliveMessage);
+            client.Publish(RoutingKeyNames.Announce,message);
         }
 
 
         public void SetPower(PowerMessage powerMessage)
         {  
             var exchangeName = powerMessage.TeamId;
-            var message = serializer.Serialize<PowerMessage>(powerMessage);
+            var message = serializer.Serialize(powerMessage);
             lock (powerLock)
             {
-                client.Publish(exchangeName, RoutingKeyNames.POWER, message);
+                client.Publish(exchangeName, RoutingKeyNames.Power, message);
             }     
         }
 
         public void SubscribeOnRaceStart(Action<StartMessage> startMessageAction)
         {
-            client.Subscribe<StartMessage>(startMessageAction);
+            client.Subscribe(startMessageAction);
         }
 
         public void SubscribeOnRaceEnd(Action<StopMessage> stopMessageAction)
         {
-            client.Subscribe<StopMessage>(stopMessageAction);
+            client.Subscribe(stopMessageAction);
         }
 
         public void SubscribeOnVelocity(Action<VelocityMessage> velocityMessageAction)
         {
-            client.Subscribe<VelocityMessage>(velocityMessageAction);
+            client.Subscribe(velocityMessageAction);
         }
 
         public void SubscribeOnSensor(Action<SensorMessage> sensorMessageAction)
@@ -62,12 +56,12 @@ namespace fnf.Client.Client
 
         public void SubscribeOnRoundPassed(Action<RoundTimeMessage> roundTimeMessageAction)
         {
-            client.Subscribe<RoundTimeMessage>(roundTimeMessageAction);
+            client.Subscribe(roundTimeMessageAction);
         }
 
         public void SubscribeOnPenalty(Action<PenaltyMessage> penaltyMessageAction)
         {
-           client.Subscribe<PenaltyMessage>(penaltyMessageAction);
+           client.Subscribe(penaltyMessageAction);
         }
     }
 }

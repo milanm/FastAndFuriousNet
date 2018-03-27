@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace fnf.Client
+﻿namespace fnf.Client.Messages
 {
-    public class SensorMessage : EventArgs
+    public class SensorMessage 
     {
         public string RaceTrackId { get; set; }
         public long TimeStamp { get; set; }
