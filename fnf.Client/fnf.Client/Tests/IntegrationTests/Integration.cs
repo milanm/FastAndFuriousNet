@@ -1,5 +1,4 @@
 ﻿using fnf.Client.Client;
-using fnf.Client.Messages;
 using log4net;
 using Moq;
 using NUnit.Framework;
@@ -64,9 +63,10 @@ namespace Tests.IntegrationTests
 
         [Test]
         public void GivenPilotApiAndRabbitClient_WhenConnectionIsCreatedAndPublishCalled_ThenChannelExchangeDeclareIsCalled()
-        {
+       {
             ChannelRegistry channelRegistry;
-            var rabbitClient = new RabbitClient("Team-0", "Team-0", channelRegistry = new ChannelRegistry(), new QueueRegistry(), connectionFactoryMock.Object);
+           var connectionFactory = new ConnectionFactory() { HostName = "localhost" };
+            var rabbitClient = new RabbitClient("Team-0", "Team-0", channelRegistry = new ChannelRegistry(), new QueueRegistry(), connectionFactory);
             rabbitClient.Log = logMock.Object;
 
             var pilotApi = new PilotApi(rabbitClient, "Team-0", "Team-0");
