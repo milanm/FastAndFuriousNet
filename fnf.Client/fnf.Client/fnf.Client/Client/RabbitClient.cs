@@ -4,22 +4,34 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using fnf.Client.Messages;
+using log4net;
 
 namespace fnf.Client.Client
 {
     public class RabbitClient : IRabbitClient
     {
         private IConnection connection;
+        public IConnection Connection
+        {
+            get { return connection; }
+        }
+
         private ISerializer serializer = new Serializer();
 
-        private QueueRegistry queueRegistry = new QueueRegistry();
-        private ChannelRegistry channelRegistry = new ChannelRegistry();
+        private IQueueRegistry queueRegistry;
+        private IChannelRegistry channelRegistry;
+        private IConnectionFactory connectionFactory;
 
+        private readonly string accessCode;
         private readonly string teamName;
-        private readonly string hostName;
 
-        private readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private Thread announceAliveThread;
+        private object announceAliveLock = new object();
+        private volatile bool announcingAllowed;
+
+        public ILog Log { get; set; }
 
         private Dictionary<Type, EventingBasicConsumer> queueConsumers = new Dictionary<Type, EventingBasicConsumer>();
 
@@ -33,27 +45,30 @@ namespace fnf.Client.Client
             [typeof(StopMessage)] = RoutingKeyNames.Stop
         };
 
-        public RabbitClient(string teamName, string hostName)
+        public RabbitClient(string teamName,string accessCode,IChannelRegistry channelRegistry,IQueueRegistry queueRegistry,IConnectionFactory connectionFactory)
         {
             this.teamName = teamName;
-            this.hostName = hostName;
+            this.accessCode = accessCode;
+            this.channelRegistry = channelRegistry;
+            this.queueRegistry = queueRegistry;
+            this.connectionFactory = connectionFactory;
+            Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         }
 
         public void Connect()
         {
-            log.Info("Establishing the connection with rabbitMQ server");
+            Log.Info("Establishing the connection with rabbitMQ server");
             try
             {
-                ConnectionFactory connectionFactory = new ConnectionFactory {HostName = hostName};
                 connection = connectionFactory.CreateConnection();
             }
             catch (Exception e)
             {
-                log.Error("Failed to connect to rabbitMQ server");
-                log.Error("Error details : " + e.Message);
+                Log.Error("Failed to connect to rabbitMQ server");
+                Log.Error("Error details : " + e.Message);
                 return; 
             }
-            log.Info("Connection established");
+            Log.Info("Connection established");
         }
 
         public void Subscribe<T>(Action<T> onMessageReceived)
@@ -82,17 +97,30 @@ namespace fnf.Client.Client
                     var body = Encoding.UTF8.GetString(ea.Body);
                     T msg = serializer.Deserialize<T>(body);
 
+                    if (channelMap[typeof(T)] == RoutingKeyNames.Start)
+                        InitializeAnnouncingAliveThread();
+
+                    if (channelMap[typeof(T)] == RoutingKeyNames.Stop)
+                    {
+                        lock (announceAliveLock)
+                        {
+                            announcingAllowed = false;
+                        }
+                    }
+
                     onMessageReceived(msg);
-                    log.Info(serializer.Serialize(msg));
+                    Log.Info(serializer.Serialize(msg));
                 };
 
                 channel.BasicConsume(queue: queueName,
                     autoAck: true,
                     consumer: consumer);
+
+                Log.Info("Subscribed to " + channelMap[typeof(T)] + " messages.");
             }
             else
             {
-                log.Error("Can not subscribe to channel because connection is not created or is closed.");
+                Log.Info("Can not subscribe to channel because connection is not created or is closed");
             }
         }
 
@@ -101,7 +129,7 @@ namespace fnf.Client.Client
             if (connection.IsOpen)
             {
                 connection.Abort();
-                log.Info("Connection aborted.");
+                Log.Info("Connection aborted.");
             }
         }
 
@@ -122,7 +150,7 @@ namespace fnf.Client.Client
             }
             else
             {
-                log.Info("Can not publish because connection is not created or is closed");
+                Log.Info("Can not publish because connection is not created or is closed");
             }
         }
 
@@ -146,8 +174,46 @@ namespace fnf.Client.Client
             }
             else
             {
-                log.Info("Can not publish because connection is not created or is closed");
+                Log.Info("Can not publish because connection is not created or is closed");
             }
+        }
+
+        private void InitializeAnnouncingAliveThread()
+        {
+            announceAliveThread = new Thread(() =>
+            {
+                lock (announceAliveLock)
+                {
+                    announcingAllowed = true; 
+                }
+
+                Log.Info("Created AnnounceIsAlive thread");
+                var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+                try
+                {
+                    while (announcingAllowed)
+                    {
+                        KeepAliveMessage message = new KeepAliveMessage()
+                        {
+                            AccessCode = accessCode,
+                            OptionalUrl = "",
+                            TeamId = teamName,
+                            TimeStamp = Convert.ToInt64((DateTime.Now - epoch).TotalMilliseconds)
+                        };
+
+                        Publish(teamName,RoutingKeyNames.Announce,serializer.Serialize(message));
+                        Thread.Sleep(1000);
+                    }
+                    Log.Info("Terminating AnnounceIsAlive thread");
+                }
+                catch (Exception e)
+                {
+                    Log.Info(e.Message);
+                }
+            });
+
+            announceAliveThread.Start();
         }
     }
 }

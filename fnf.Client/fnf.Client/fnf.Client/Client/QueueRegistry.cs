@@ -3,7 +3,7 @@ using RabbitMQ.Client;
 
 namespace fnf.Client.Client
 {
-    class QueueRegistry
+    public class QueueRegistry: IQueueRegistry
     {
         private Dictionary<string, string> queueNames = new Dictionary<string, string>();
 

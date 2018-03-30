@@ -1,14 +1,14 @@
 using System;
 using Moq;
 using NUnit.Framework;
-using fnf.Client;
+using fnf.Client.Messages;
 using fnf.Client.Client;
 using fnf.Client.Serialization;
 
-namespace Tests
+namespace Tests.UnitTests
 {
-    [TestFixture]
-    public class ClientApiTests
+    [TestFixture(Category = "Unit Tests")]
+    public class PilotApiTests
     {
         private Mock<IRabbitClient> rabbitClientMock;
 
@@ -27,26 +27,18 @@ namespace Tests
         [Test]
         public void GivenRabbitClient_WhenPowerMessageSent_ThenRabbitReceivesAMessage()
         {
-            var pilotApi = new PilotApi(rabbitClientMock.Object);
+            var pilotApi = new PilotApi(rabbitClientMock.Object, "Team-0", "Team-0");
             var serializer = new Serializer();
 
-            var message = new PowerMessage()
-            {
-                AccessCode = "Team-0",
-                P = 110,
-                TeamId = "Team-1",
-                TimeStamp = 12345
-            };
+            pilotApi.SetPower(100);
 
-            pilotApi.SetPower(message);
-
-            rabbitClientMock.Verify(mock => mock.Publish(message.TeamId, RoutingKeyNames.Power, serializer.Serialize(message)));
+            rabbitClientMock.Verify(mock => mock.Publish(It.IsAny<string>(), RoutingKeyNames.Power, It.IsAny<string>()));
         }
 
         [Test]
         public void GivenRabbitClient_WhenSubscribedToVelocity_ThenReceivesMessages()
         {
-            var pilotApi = new PilotApi(rabbitClientMock.Object);
+            var pilotApi = new PilotApi(rabbitClientMock.Object, "Team-0", "Team-0");
             pilotApi.SubscribeOnVelocity((message) => { });
             rabbitClientMock.Verify(mock => mock.Subscribe(It.IsAny<Action<VelocityMessage>>()));
         }
@@ -54,7 +46,7 @@ namespace Tests
         [Test]
         public void GivenRabbitClient_WhenSubscribedToSensor_ThenReceivesMessages()
         {
-            var pilotApi = new PilotApi(rabbitClientMock.Object);
+            var pilotApi = new PilotApi(rabbitClientMock.Object, "Team-0", "Team-0");
             pilotApi.SubscribeOnSensor((message) => { });
             rabbitClientMock.Verify(mock => mock.Subscribe(It.IsAny<Action<SensorMessage>>()));
         }
@@ -62,7 +54,7 @@ namespace Tests
         [Test]
         public void GivenRabbitClient_WhenSubscribedToPenalty_ThenReceivesMessages()
         {
-            var pilotApi = new PilotApi(rabbitClientMock.Object);
+            var pilotApi = new PilotApi(rabbitClientMock.Object, "Team-0", "Team-0");
             pilotApi.SubscribeOnPenalty((message) => { });
             rabbitClientMock.Verify(mock => mock.Subscribe(It.IsAny<Action<PenaltyMessage>>()));
         }
@@ -70,7 +62,7 @@ namespace Tests
         [Test]
         public void GivenRabbitClient_WhenSubscribedToRoundEnd_ThenReceivesMessages()
         {
-            var pilotApi = new PilotApi(rabbitClientMock.Object);
+            var pilotApi = new PilotApi(rabbitClientMock.Object, "Team-0", "Team-0");
             pilotApi.SubscribeOnRoundPassed((message) => { });
             rabbitClientMock.Verify(mock => mock.Subscribe(It.IsAny<Action<RoundTimeMessage>>()));
         }
@@ -78,7 +70,7 @@ namespace Tests
         [Test]
         public void GivenRabbitClient_WhenSubscribedToStart_ThenReceivesMessages()
         {
-            var pilotApi = new PilotApi(rabbitClientMock.Object);
+            var pilotApi = new PilotApi(rabbitClientMock.Object, "Team-0", "Team-0");
             pilotApi.SubscribeOnRaceStart((message) => { });
             rabbitClientMock.Verify(mock => mock.Subscribe(It.IsAny<Action<StartMessage>>()));
         }
@@ -86,7 +78,7 @@ namespace Tests
         [Test]
         public void GivenRabbitClient_WhenSubscribedToStop_ThenReceivesMessages()
         {
-            var pilotApi = new PilotApi(rabbitClientMock.Object);
+            var pilotApi = new PilotApi(rabbitClientMock.Object, "Team-0", "Team-0");
             pilotApi.SubscribeOnRaceEnd((message) => { });
             rabbitClientMock.Verify(mock => mock.Subscribe(It.IsAny<Action<StopMessage>>()));
         }

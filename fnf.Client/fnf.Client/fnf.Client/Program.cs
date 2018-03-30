@@ -1,22 +1,22 @@
 ﻿using fnf.Client.Client;
 using System;
+using System.Reflection;
+using Ninject;
 
 namespace fnf.Client
 {
     class Program
-    {
-       
-
-
+    { 
         static void Main()
         {
-            var rabbit = new RabbitClient("Team-0", "localhost");
+            IKernel kernel = new StandardKernel();
+            kernel.Load(Assembly.GetExecutingAssembly());
+        
+            IPilotApi pilotApi = kernel.Get<IPilotApi>();
 
-            var pilotApi = new PilotApi(rabbit);
-
-            rabbit.Connect();
-
-            var pilot = new Pilot(pilotApi,"Team-0");
+            var pilot = new Pilot.Pilot(pilotApi);
+            
+            pilotApi.ConnectToRabbitMq();
 
             pilot.SubscribeToAllChannels();
 

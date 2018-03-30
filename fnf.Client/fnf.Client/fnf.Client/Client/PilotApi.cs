@@ -10,27 +10,29 @@ namespace fnf.Client.Client
 
         private ISerializer serializer = new Serializer();
 
-        private object powerLock = new object(); 
+        private object powerLock = new object();
 
-        public PilotApi(IRabbitClient client)
+        private string accessCode;
+
+        private string teamName; 
+
+        public PilotApi(IRabbitClient client, string accessCode, string teamName)
         {
             this.client = client;
+            this.accessCode = accessCode;
+            this.teamName = teamName; 
         }
 
-        public void AnnounceIsAlive(KeepAliveMessage keepAliveMessage)
+        public void SetPower(int power)
         {
-            var message = serializer.Serialize(keepAliveMessage);
-            client.Publish(RoutingKeyNames.Announce,message);
-        }
-
-
-        public void SetPower(PowerMessage powerMessage)
-        {  
-            var exchangeName = powerMessage.TeamId;
+            var milliseconds = (new DateTime(1970, 1, 1) - new DateTime()).Milliseconds;
+            var powerMessage = new PowerMessage(){ AccessCode = accessCode, P = power, TeamId = teamName, TimeStamp = milliseconds };
+           
             var message = serializer.Serialize(powerMessage);
+
             lock (powerLock)
             {
-                client.Publish(exchangeName, RoutingKeyNames.Power, message);
+                client.Publish(teamName, RoutingKeyNames.Power, message);
             }     
         }
 
@@ -62,6 +64,16 @@ namespace fnf.Client.Client
         public void SubscribeOnPenalty(Action<PenaltyMessage> penaltyMessageAction)
         {
            client.Subscribe(penaltyMessageAction);
+        }
+
+        public void ConnectToRabbitMq()
+        {
+            client.Connect(); 
+        }
+
+        public void DisconnectFromRabbitMq()
+        {
+            client.Disconnect();
         }
     }
 }

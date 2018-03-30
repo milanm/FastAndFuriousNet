@@ -3,9 +3,14 @@ using RabbitMQ.Client;
 
 namespace fnf.Client.Client
 {
-    class ChannelRegistry
+    public class ChannelRegistry : IChannelRegistry
     {
         private Dictionary<string, IModel> channels = new Dictionary<string, IModel>();
+
+        public Dictionary<string,IModel> Channels
+        {
+            get { return channels; }
+        }
 
         public IModel GetOrCreateChannel(string exchangeName, string routingKey, IConnection connection)
         {

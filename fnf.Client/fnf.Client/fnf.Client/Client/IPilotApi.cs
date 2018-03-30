@@ -4,10 +4,8 @@ using fnf.Client.Messages;
 namespace fnf.Client.Client
 {
     interface IPilotApi
-    {
-        void AnnounceIsAlive(KeepAliveMessage keepAliveMessage);
-
-        void SetPower(PowerMessage powerMessage);
+    { 
+        void SetPower(int powerMessage);
 
         void SubscribeOnRaceStart(Action<StartMessage> startMessageAction);
 
@@ -20,5 +18,9 @@ namespace fnf.Client.Client
         void SubscribeOnRoundPassed(Action<RoundTimeMessage> roundTimeMessageAction);
 
         void SubscribeOnPenalty(Action<PenaltyMessage> penaltyMessageAction);
+
+        void ConnectToRabbitMq();
+
+        void DisconnectFromRabbitMq();
     }
 }
