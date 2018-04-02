@@ -7,7 +7,7 @@ namespace fnf.Client.Pilot
     {
         private IPilotApi pilotApi;
 
-        public const int SafePower = 110;
+        public const byte SafePower = 110;
 
         public void OnVelocityMessage(VelocityMessage velocityMessage)
         {
@@ -44,19 +44,19 @@ namespace fnf.Client.Pilot
             this.pilotApi = pilotApi;
         }
 
-        public void SetPower(int power)
+        public void SetPower(byte power)
         {
             pilotApi.SetPower(power);
         }
 
         public void SubscribeToAllChannels()
         {
-            pilotApi.SubscribeOnVelocity((message) => { OnVelocityMessage(message);});
-            pilotApi.SubscribeOnSensor((message) => { OnSensorMessage(message);});
-            pilotApi.SubscribeOnPenalty((message) => { OnPenaltyMessage(message);});
-            pilotApi.SubscribeOnRoundPassed((message) => { OnRoundEndMessage(message);});
-            pilotApi.SubscribeOnRaceStart((message) => { OnStartMessage(message);});
-            pilotApi.SubscribeOnRaceEnd((message) => { OnStopMessage(message);}); 
+            pilotApi.SubscribeOnVelocity(OnVelocityMessage);
+            pilotApi.SubscribeOnSensor(OnSensorMessage);
+            pilotApi.SubscribeOnPenalty(OnPenaltyMessage);
+            pilotApi.SubscribeOnRoundPassed(OnRoundEndMessage);
+            pilotApi.SubscribeOnRaceStart(OnStartMessage);
+            pilotApi.SubscribeOnRaceEnd(OnStopMessage); 
         }
     }
 }

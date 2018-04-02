@@ -5,7 +5,7 @@ namespace fnf.Client.Client
 {
     interface IPilotApi
     { 
-        void SetPower(int power);
+        void SetPower(byte power);
 
         void SubscribeOnRaceStart(Action<StartMessage> startMessageAction);
 

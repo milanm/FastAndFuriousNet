@@ -3,7 +3,6 @@ using Moq;
 using NUnit.Framework;
 using fnf.Client.Messages;
 using fnf.Client.Client;
-using fnf.Client.Serialization;
 
 namespace Tests.UnitTests
 {
@@ -28,7 +27,6 @@ namespace Tests.UnitTests
         public void GivenRabbitClient_WhenPowerMessageSent_ThenRabbitReceivesAMessage()
         {
             var pilotApi = new PilotApi(rabbitClientMock.Object, "Team-0", "Team-0");
-            var serializer = new Serializer();
 
             pilotApi.SetPower(100);
 

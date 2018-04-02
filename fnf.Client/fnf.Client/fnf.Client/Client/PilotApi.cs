@@ -23,7 +23,7 @@ namespace fnf.Client.Client
             this.teamName = teamName; 
         }
 
-        public void SetPower(int power)
+        public void SetPower(byte power)
         {
             var milliseconds = (new DateTime(1970, 1, 1) - new DateTime()).Milliseconds;
             var powerMessage = new PowerMessage(){ AccessCode = accessCode, P = power, TeamId = teamName, TimeStamp = milliseconds };

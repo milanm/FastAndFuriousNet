@@ -16,7 +16,7 @@ namespace fnf.Client.Pilot
 
         void OnStopMessage(StopMessage stopMessage);
 
-        void SetPower(int power);
+        void SetPower(byte power);
 
         void SubscribeToAllChannels();
     }
