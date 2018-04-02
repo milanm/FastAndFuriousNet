@@ -25,7 +25,7 @@ namespace fnf.Client.Client
 
         public void SetPower(byte power)
         {
-            var milliseconds = (new DateTime(1970, 1, 1) - new DateTime()).Milliseconds;
+            var milliseconds = (DateTime.UtcNow - new DateTime(1970, 1, 1)).Milliseconds;
             var powerMessage = new PowerMessage(){ AccessCode = accessCode, P = power, TeamId = teamName, TimeStamp = milliseconds };
            
             var message = serializer.Serialize(powerMessage);

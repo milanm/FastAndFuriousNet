@@ -188,7 +188,8 @@ namespace fnf.Client.Client
                 }
 
                 Log.Info("Created AnnounceIsAlive thread");
-                var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+                var timeStamp = (DateTime.UtcNow - new DateTime(1970, 1, 1)).Milliseconds;
 
                 try
                 {
@@ -199,7 +200,7 @@ namespace fnf.Client.Client
                             AccessCode = accessCode,
                             OptionalUrl = "",
                             TeamId = teamName,
-                            TimeStamp = Convert.ToInt64((DateTime.Now - epoch).TotalMilliseconds)
+                            TimeStamp = timeStamp
                         };
 
                         Publish(teamName,RoutingKeyNames.Announce,serializer.Serialize(message));
