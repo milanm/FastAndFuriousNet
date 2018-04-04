@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "fnf.Client": {
+      "commandName": "Project",
+      "commandLineArgs": "localhost Team-0 Team-0"
+    }
+  }
+}
